@@ -90,7 +90,7 @@ def sendKey(window, keycode, fun):
     display.flush()
     display.sync()
 
-def initXStuff():
+def init():
     global display
     display = Display()
     global root
@@ -103,35 +103,35 @@ def printWinInfo(window):
     pid = getPidByWindow(window)
     print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
 
-def handleKeypress(window):
+def processEvents(window):
     while True:
-        grabKeys(window)
-        while True:
-            event = root.display.next_event()
-            if event.type == X.KeyPress:
-                keycode = event.detail
-                if keycode in KEYS:
-                    pressKey(window, keycode)
-            elif event.type == X.KeyRelease:
-                keycode = event.detail
-                if keycode in KEYS:
-                    releaseKey(window, keycode)
+        event = root.display.next_event()
+        processKeyEvent(event, window)
+
+def processKeyEvent(event, window):
+    if event.type == X.KeyPress:
+        keycode = event.detail
+        if keycode in KEYS:
+            pressKey(window, keycode)
+    elif event.type == X.KeyRelease:
+        keycode = event.detail
+        if keycode in KEYS:
+            releaseKey(window, keycode)
 
 def main():
-    initXStuff()
+    init()
+    try:
+        window = findWindowByName()
+        if not window:
+            print 'Window is None'
+            window = waitForWindow()
+        grabKeys(window)
+        printWinInfo(window)
+        processEvents(window)
 
-    while True:
-        try:
-            window = findWindowByName()
-            if not window:
-                print 'Window is None'
-                window = waitForWindow()
-            printWinInfo(window)
-            handleKeypress(window)
+    except KeyboardInterrupt:
+        print 'Exiting...'
 
-        except KeyboardInterrupt:
-            print 'Exiting...'
-            break
 if __name__ == '__main__':
     main()
 
