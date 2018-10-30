@@ -8,7 +8,9 @@ import psutil
 import time
 
 SUBSTRING = "desktop (SSL/TLS Secured, 256 bit)"
-ALT_TAB = 64
+ALT_L_KEY = 64
+TAB_KEY = 23
+A_KEY = 38
 
 def childrenOfWindows(window):
     for child in window.query_tree().children:
@@ -62,33 +64,30 @@ def grabKey(root, window, key):
 def ungrabKey(window, key):
     window.ungrab_key(key, X.AnyModifier)
 
-def sendKeystroke(root, display, window, keycode):
-    event = Xlib.protocol.event.KeyPress(
+def sendKey(root, display, window, keycode, press):
+
+    fun = Xlib.protocol.event.KeyPress if press else Xlib.protocol.event.KeyRelease
+
+    event = fun(
         time = int(time.time()),
         root = root,
         window = window,
         same_screen = 0, child = Xlib.X.NONE,
         root_x = 0, root_y = 0, event_x = 0, event_y = 0,
-        state = Xlib.X.ShiftMask,
+        state = 0,
+#        state = Xlib.X.ShiftMask,
         detail = keycode
         )
     window.send_event(event, propagate = True)
     display.flush()
     display.sync()
     time.sleep(0.1) # magic
-    event = Xlib.protocol.event.KeyRelease(
-        time = int(time.time()),
-        root = display.screen().root,
-        window = window,
-        same_screen = 0, child = Xlib.X.NONE,
-        root_x = 0, root_y = 0, event_x = 0, event_y = 0,
-        state = Xlib.X.ShiftMask,
-        detail = keycode
-        )
-    window.send_event(event, propagate = True)
-    window.send_event(event, propagate = True)
-    display.flush()
-    display.sync()
+
+def sendKeystroke(root, display, window):
+    sendKey(root, display, window, ALT_L_KEY, True)
+    sendKey(root, display, window, TAB_KEY, True)
+    sendKey(root, display, window, TAB_KEY, False)
+    sendKey(root, display, window, ALT_L_KEY, False)
 
 def main():
     display = Display()
@@ -101,9 +100,10 @@ def main():
     title = getWindowTitle(display, window)
     pid = getPidByWindow(display, window)
     print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
-#    while True:
-    sendKeystroke(root, display, window, 0x10)
 
+    sendKeystroke(root, display, window)
+
+#    while True:
 #        root.change_attributes(event_mask = X.KeyReleaseMask)
 #        grabKey(root, window, ALT_TAB)
 #        while True:
@@ -113,7 +113,7 @@ def main():
 #                if keycode == ALT_TAB:
 #                    print '!!!'
 #                    ungrabKey(window, ALT_TAB)
-#                    sendKeystroke(display, window, 10)
+#                    sendKeystroke(root, display, window)
 #                    grabKey(root, window, ALT_TAB)
 
 if __name__ == '__main__':
