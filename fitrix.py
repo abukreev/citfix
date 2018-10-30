@@ -65,17 +65,13 @@ def grabKeys(window):
     grabKey(window, ALT_L_KEY)
     grabKey(window, TAB_KEY)
 
-def ungrabKey(window, key):
-    window.ungrab_key(key, X.AnyModifier)
+def pressKey(root, display, window, keycode):
+    sendKey(root, display, window, keycode, Xlib.protocol.event.KeyPress)
 
-def ungrabKeys(window):
-    ungrabKey(window, ALT_L_KEY)
-    ungrabKey(window, TAB_KEY)
+def releaseKey(root, display, window, keycode):
+    sendKey(root, display, window, keycode, Xlib.protocol.event.KeyRelease)
 
-def sendKey(root, display, window, keycode, press):
-
-    fun = Xlib.protocol.event.KeyPress if press else Xlib.protocol.event.KeyRelease
-
+def sendKey(root, display, window, keycode, fun):
     event = fun(
         time = int(time.time()),
         root = root,
@@ -83,18 +79,11 @@ def sendKey(root, display, window, keycode, press):
         same_screen = 0, child = Xlib.X.NONE,
         root_x = 0, root_y = 0, event_x = 0, event_y = 0,
         state = 0,
-#        state = Xlib.X.ShiftMask,
         detail = keycode
         )
     window.send_event(event, propagate = True)
     display.flush()
     display.sync()
-
-def sendKeystroke(root, display, window):
-    sendKey(root, display, window, ALT_L_KEY, True)
-    sendKey(root, display, window, TAB_KEY, True)
-    sendKey(root, display, window, TAB_KEY, False)
-    sendKey(root, display, window, ALT_L_KEY, False)
 
 def main():
     display = Display()
@@ -118,30 +107,14 @@ def main():
         grabKeys(window)
         while True:
             event = root.display.next_event()
-
             if event.type == X.KeyPress:
                 keycode = event.detail
-                if keycode == ALT_L_KEY:
-                    altPressed = True
-                elif keycode == TAB_KEY:
-                    tabCounter = tabCounter + 1
-                    if (altPressed):
-                        ungrabKeys(window)
-                        if tabCounter > 0:
-                            sendKey(root, display, window, ALT_L_KEY, True)
-                        sendKey(root, display, window, TAB_KEY, True)
-                        sendKey(root, display, window, TAB_KEY, False)
-                        if tabCounter > 0:
-                            sendKey(root, display, window, ALT_L_KEY, False)
-                        grabKeys(window)
-
+                if keycode in [ALT_L_KEY, TAB_KEY]:
+                    pressKey(root, display, window, keycode)
             elif event.type == X.KeyRelease:
-                keycode = event.detail
-                if keycode == ALT_L_KEY:
-                    altPressed = False
-                elif keycode == TAB_KEY:
-                    tabCounter = 0
-
+                if keycode in [ALT_L_KEY, TAB_KEY]:
+                    releaseKey(root, display, window, keycode)
+ 
 if __name__ == '__main__':
     main()
 
