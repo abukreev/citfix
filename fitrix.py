@@ -98,6 +98,25 @@ def initXStuff():
     root.change_attributes(event_mask = X.KeyPressMask)
     root.change_attributes(event_mask = X.KeyReleaseMask)
 
+def printWinInfo(window):
+    title = getWindowTitle(window)
+    pid = getPidByWindow(window)
+    print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
+
+def handleKeypress(window):
+    while True:
+        grabKeys(window)
+        while True:
+            event = root.display.next_event()
+            if event.type == X.KeyPress:
+                keycode = event.detail
+                if keycode in KEYS:
+                    pressKey(window, keycode)
+            elif event.type == X.KeyRelease:
+                keycode = event.detail
+                if keycode in KEYS:
+                    releaseKey(window, keycode)
+
 def main():
     initXStuff()
 
@@ -107,24 +126,9 @@ def main():
             if not window:
                 print 'Window is None'
                 window = waitForWindow()
-            title = getWindowTitle(window)
-            pid = getPidByWindow(window)
-            print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
+            printWinInfo(window)
+            handleKeypress(window)
 
-            altPressed = False
-            tabCounter = 0
-            while True:
-                grabKeys(window)
-                while True:
-                    event = root.display.next_event()
-                    if event.type == X.KeyPress:
-                        keycode = event.detail
-                        if keycode in KEYS:
-                            pressKey(window, keycode)
-                    elif event.type == X.KeyRelease:
-                        keycode = event.detail
-                        if keycode in KEYS:
-                            releaseKey(window, keycode)
         except KeyboardInterrupt:
             print 'Exiting...'
             break
