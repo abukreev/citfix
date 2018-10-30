@@ -14,13 +14,16 @@ KEYS = [
     133 # WIN_L_KEY
 ]
 
-def childrenOfWindows(window):
+display = None
+root = None
+
+def childrenOfWindow(window):
     for child in window.query_tree().children:
         yield child
-        for child2 in childrenOfWindows(child):
+        for child2 in childrenOfWindow(child):
             yield child2
 
-def getWindowTitle(display, window):
+def getWindowTitle(window):
     return window.get_wm_name()
 
 def windowIsOurs(window):
@@ -29,8 +32,8 @@ def windowIsOurs(window):
     except UnicodeDecodeError:
         return False
 
-def findWindowByName(root):
-    for window in childrenOfWindows(root):
+def findWindowByName():
+    for window in childrenOfWindow(root):
         try:
             if windowIsOurs(window):
                 return window
@@ -38,7 +41,7 @@ def findWindowByName(root):
             continue
     return None
 
-def getPidByWindow(display, window):
+def getPidByWindow(window):
     type_atom = display.intern_atom('_NET_WM_PID')
     try:
         type = window.get_full_property(type_atom, X.AnyPropertyType)
@@ -67,13 +70,13 @@ def grabKeys(window):
     for key in KEYS:
         grabKey(window, key)
 
-def pressKey(root, display, window, keycode):
-    sendKey(root, display, window, keycode, Xlib.protocol.event.KeyPress)
+def pressKey(window, keycode):
+    sendKey(window, keycode, Xlib.protocol.event.KeyPress)
 
-def releaseKey(root, display, window, keycode):
-    sendKey(root, display, window, keycode, Xlib.protocol.event.KeyRelease)
+def releaseKey(window, keycode):
+    sendKey(window, keycode, Xlib.protocol.event.KeyRelease)
 
-def sendKey(root, display, window, keycode, fun):
+def sendKey(window, keycode, fun):
     event = fun(
         time = int(time.time()),
         root = root,
@@ -82,25 +85,30 @@ def sendKey(root, display, window, keycode, fun):
         root_x = 0, root_y = 0, event_x = 0, event_y = 0,
         state = 0,
         detail = keycode
-        )
+    )
     window.send_event(event, propagate = True)
     display.flush()
     display.sync()
 
-def main():
+def initXStuff():
+    global display
     display = Display()
+    global root
     root = display.screen().root
     root.change_attributes(event_mask = X.KeyPressMask)
     root.change_attributes(event_mask = X.KeyReleaseMask)
 
+def main():
+    initXStuff()
+
     while True:
         try:
-            window = findWindowByName(root)
+            window = findWindowByName()
             if not window:
                 print 'Window is None'
                 window = waitForWindow()
-            title = getWindowTitle(display, window)
-            pid = getPidByWindow(display, window)
+            title = getWindowTitle(window)
+            pid = getPidByWindow(window)
             print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
 
             altPressed = False
@@ -112,11 +120,11 @@ def main():
                     if event.type == X.KeyPress:
                         keycode = event.detail
                         if keycode in KEYS:
-                            pressKey(root, display, window, keycode)
+                            pressKey(window, keycode)
                     elif event.type == X.KeyRelease:
                         keycode = event.detail
                         if keycode in KEYS:
-                            releaseKey(root, display, window, keycode)
+                            releaseKey(window, keycode)
         except KeyboardInterrupt:
             print 'Exiting...'
             break
