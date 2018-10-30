@@ -8,9 +8,11 @@ import psutil
 import time
 
 SUBSTRING = "desktop (SSL/TLS Secured, 256 bit)"
-ALT_L_KEY = 64
-TAB_KEY = 23
-A_KEY = 38
+KEYS = [
+    64, # ALT_L_KEY
+    23, # TAB_KEY
+    133 # WIN_L_KEY
+]
 
 def childrenOfWindows(window):
     for child in window.query_tree().children:
@@ -62,8 +64,8 @@ def grabKey(window, key):
     )
 
 def grabKeys(window):
-    grabKey(window, ALT_L_KEY)
-    grabKey(window, TAB_KEY)
+    for key in KEYS:
+        grabKey(window, key)
 
 def pressKey(root, display, window, keycode):
     sendKey(root, display, window, keycode, Xlib.protocol.event.KeyPress)
@@ -97,8 +99,6 @@ def main():
     pid = getPidByWindow(display, window)
     print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
 
-#    sendKeystroke(root, display, window)
-    
     altPressed = False
     tabCounter = 0
     while True:
@@ -109,10 +109,11 @@ def main():
             event = root.display.next_event()
             if event.type == X.KeyPress:
                 keycode = event.detail
-                if keycode in [ALT_L_KEY, TAB_KEY]:
+                if keycode in KEYS:
                     pressKey(root, display, window, keycode)
             elif event.type == X.KeyRelease:
-                if keycode in [ALT_L_KEY, TAB_KEY]:
+                keycode = event.detail
+                if keycode in KEYS:
                     releaseKey(root, display, window, keycode)
  
 if __name__ == '__main__':
