@@ -90,32 +90,36 @@ def sendKey(root, display, window, keycode, fun):
 def main():
     display = Display()
     root = display.screen().root
-    
-    window = findWindowByName(root)
-    if not window:
-        print 'Window is None'
-        window = waitForWindow()
-    title = getWindowTitle(display, window)
-    pid = getPidByWindow(display, window)
-    print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
+    root.change_attributes(event_mask = X.KeyPressMask)
+    root.change_attributes(event_mask = X.KeyReleaseMask)
 
-    altPressed = False
-    tabCounter = 0
     while True:
-        root.change_attributes(event_mask = X.KeyPressMask)
-        root.change_attributes(event_mask = X.KeyReleaseMask)
-        grabKeys(window)
-        while True:
-            event = root.display.next_event()
-            if event.type == X.KeyPress:
-                keycode = event.detail
-                if keycode in KEYS:
-                    pressKey(root, display, window, keycode)
-            elif event.type == X.KeyRelease:
-                keycode = event.detail
-                if keycode in KEYS:
-                    releaseKey(root, display, window, keycode)
- 
+        try:
+            window = findWindowByName(root)
+            if not window:
+                print 'Window is None'
+                window = waitForWindow()
+            title = getWindowTitle(display, window)
+            pid = getPidByWindow(display, window)
+            print 'pid = {}; window id = {}; title = {}'.format(hex(window.id), pid, title)
+
+            altPressed = False
+            tabCounter = 0
+            while True:
+                grabKeys(window)
+                while True:
+                    event = root.display.next_event()
+                    if event.type == X.KeyPress:
+                        keycode = event.detail
+                        if keycode in KEYS:
+                            pressKey(root, display, window, keycode)
+                    elif event.type == X.KeyRelease:
+                        keycode = event.detail
+                        if keycode in KEYS:
+                            releaseKey(root, display, window, keycode)
+        except KeyboardInterrupt:
+            print 'Exiting...'
+            break
 if __name__ == '__main__':
     main()
 
