@@ -8,14 +8,7 @@ import psutil
 import time
 
 SUBSTRING = "desktop (SSL/TLS Secured, 256 bit)"
-KEYS = [
-    23, # TAB_KEY
-    37, # CTRL_L_KEY
-    64, # ALT_L_KEY
-    112, # PGUP_KEY
-    11, # PGDOWN_KEY
-    133 # WIN_L_KEY
-]
+MAGIC_KEY = 105
 
 display = None
 root = None
@@ -88,6 +81,22 @@ def getPidByWindow(window):
           pass
     return None
 
+def grabKey(window, key):
+    window.grab_key(
+        key,
+        X.AnyModifier,
+        1,
+        X.GrabModeAsync,
+        X.GrabModeAsync
+    )
+
+def grabKeys(window):
+    window.grab_keyboard(True, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime)
+
+def ungrabKeys():
+    global display
+    display.ungrab_keyboard(0, X.CurrentTime)
+
 def checkWindow(window):
     global citrixWindow
     ourWindow = None
@@ -106,26 +115,6 @@ def checkWindow(window):
         citrixWindow = None
         print ('Lost our window')
         ungrabKeys()
-
-    printWinInfo(citrixWindow)
-
-def grabKey(window, key):
-    window.grab_key(
-        key,
-        X.AnyModifier,
-        1,
-        X.GrabModeAsync,
-        X.GrabModeAsync
-    )
-
-def grabKeys(window):
-#    for key in KEYS:
-#        grabKey(window, key)
-    window.grab_keyboard(True, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime)
-
-def ungrabKeys():
-    global display
-    display.ungrab_keyboard(0, X.CurrentTime)
 
 def pressKey(window, keycode):
     sendKey(window, keycode, Xlib.protocol.event.KeyPress)
@@ -163,18 +152,21 @@ def init():
 def processEvents():
     while True:
         event = root.display.next_event()
-#        print event
         processKeyEvent(event)
-#        processCreateEvent(event)
         processPropertyEvent(event)
 
 def processKeyEvent(event):
+    global citrixWindow
+    print ("processKeyEvent: citrixWindow = {}".format(citrixWindow))
     if citrixWindow:
-        print ("processKeyEvent")
         if event.type == X.KeyPress:
             keycode = event.detail
-            pressKey(citrixWindow, keycode)
-            print('Sending key press')
+            if keycode == MAGIC_KEY:
+                print("Magic key has been pressed")
+                citrixWindow = None
+                ungrabKeys()
+            else:
+                pressKey(citrixWindow, keycode)
         elif event.type == X.KeyRelease:
             keycode = event.detail
             releaseKey(citrixWindow, keycode)
