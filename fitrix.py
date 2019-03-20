@@ -116,23 +116,27 @@ def checkWindow(window):
         print ('Lost our window')
         ungrabKeys()
 
-def pressKey(window, keycode):
-    sendKey(window, keycode, Xlib.protocol.event.KeyPress)
+def pressKey(window, event):
+    sendKey(window, event, Xlib.protocol.event.KeyPress, 0)
 
-def releaseKey(window, keycode):
-    sendKey(window, keycode, Xlib.protocol.event.KeyRelease)
+def releaseKey(window, event):
+    sendKey(window, event, Xlib.protocol.event.KeyRelease, 0)
 
-def sendKey(window, keycode, fun):
-    event = fun(
+def sendKey(window, old_event, fun, state):
+    new_event = fun(
         time = int(time.time()),
         root = root,
         window = window,
-        same_screen = 0, child = Xlib.X.NONE,
-        root_x = 0, root_y = 0, event_x = 0, event_y = 0,
-        state = 0,
-        detail = keycode
+        same_screen = old_event.same_screen,
+        child = Xlib.X.NONE,
+        root_x = 0,
+        root_y = 0,
+        event_x = 0,
+        event_y = 0,
+        state = old_event.state,
+        detail = old_event.detail
     )
-    window.send_event(event, propagate = True)
+    window.send_event(new_event, propagate = True)
     display.flush()
     display.sync()
 
@@ -161,15 +165,16 @@ def processKeyEvent(event):
     if citrixWindow:
         if event.type == X.KeyPress:
             keycode = event.detail
+            print("keycode = {}".format(keycode))
             if keycode == MAGIC_KEY:
                 print("Magic key has been pressed")
                 citrixWindow = None
                 ungrabKeys()
             else:
-                pressKey(citrixWindow, keycode)
+                pressKey(citrixWindow, event)
         elif event.type == X.KeyRelease:
             keycode = event.detail
-            releaseKey(citrixWindow, keycode)
+            releaseKey(citrixWindow, event)
 
 #def processCreateEvent(event):
 #    if event.type == X.PropertyNotify:
