@@ -25,19 +25,21 @@ def childrenOfWindow(window):
             yield child
             for child2 in childrenOfWindow(child):
                 yield child2
-    except Xlib.error.BadWindow:
+    except (AttributeError, Xlib.error.BadWindow):
         raise StopIteration
 
 def parentsOfWindiow(window):
     try:
         yield window.query_tree().parent
+    except AttributeError:
+        raise StopIteration
     except Xlib.error.BadWindow:
         raise StopIteration
 
 def isOurWindow(window):
     try:
         return SUBSTRING in getWindowTitle(window)
-    except UnicodeDecodeError:
+    except (UnicodeDecodeError, TypeError):
         return False
 
 def findOurWindowUnderThis(parent):
@@ -58,10 +60,13 @@ def initWindow(window):
     window.change_attributes(event_mask = Xlib.X.SubstructureNotifyMask)
 
 def printWinInfo(window):
-    title = getWindowTitle(window)
-    pid = getPidByWindow(window)
-    winid = hex(window.id) if window else None
-    print 'pid = {}; window id = {}; title = {}'.format(winid, pid, title)
+    try:
+        title = getWindowTitle(window)
+        pid = getPidByWindow(window)
+        winid = hex(window.id) if window else None
+        print 'pid = {}; window id = {}; title = {}'.format(winid, pid, title)
+    except AttributeError:
+        pass
 
 def getWindowTitle(window):
     try:
@@ -77,7 +82,7 @@ def getPidByWindow(window):
           if type:
             pid = type.value[0]
             return pid
-      except error.BadWindow:
+      except (error.BadWindow, AttributeError):
           pass
     return None
 
