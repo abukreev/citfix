@@ -129,10 +129,10 @@ def sendKey(window, old_event, fun, state):
         window = window,
         same_screen = old_event.same_screen,
         child = Xlib.X.NONE,
-        root_x = 0,
-        root_y = 0,
-        event_x = 0,
-        event_y = 0,
+        root_x = old_event.root_x,
+        root_y = old_event.root_y,
+        event_x = old_event.event_x,
+        event_y = old_event.event_y,
         state = old_event.state,
         detail = old_event.detail
     )
